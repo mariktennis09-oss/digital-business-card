@@ -2,14 +2,8 @@
 
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { CanvasTexture, Matrix4, Mesh, MeshBasicMaterial, Quaternion } from 'three';
-import { DEVICE, OBJECT, SHADOW } from '@/lib/scene-constants';
-
-const HALF = {
-  x: DEVICE.body.width / 2,
-  y: DEVICE.body.height / 2,
-  z: DEVICE.body.depth / 2,
-};
+import { CanvasTexture, Matrix4, Mesh, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
+import { OBJECT, SHADOW } from '@/lib/scene-constants';
 
 /**
  * Тень под прибором: размытое пятно чуть темнее фона, а не shadow map.
@@ -26,10 +20,13 @@ const HALF = {
  */
 export function GroundShadow({
   orientation,
+  halfExtents,
   lift,
   reducedMotion = false,
 }: {
   orientation: RefObject<Quaternion>;
+  /** Полурёбра габаритной коробки объекта. Приходят вместе с моделью. */
+  halfExtents: Vector3;
   lift?: RefObject<{ value: number }>;
   reducedMotion?: boolean;
 }) {
@@ -71,8 +68,14 @@ export function GroundShadow({
 
     // Габарит повёрнутой коробки вдоль мировой оси. Матрица у three
     // хранится по столбцам, поэтому строка — это элементы 0, 4, 8.
-    const acrossX = Math.abs(m[0]) * HALF.x + Math.abs(m[4]) * HALF.y + Math.abs(m[8]) * HALF.z;
-    const alongZ = Math.abs(m[2]) * HALF.x + Math.abs(m[6]) * HALF.y + Math.abs(m[10]) * HALF.z;
+    const acrossX =
+      Math.abs(m[0]) * halfExtents.x +
+      Math.abs(m[4]) * halfExtents.y +
+      Math.abs(m[8]) * halfExtents.z;
+    const alongZ =
+      Math.abs(m[2]) * halfExtents.x +
+      Math.abs(m[6]) * halfExtents.y +
+      Math.abs(m[10]) * halfExtents.z;
 
     // Чем выше объект, тем шире и бледнее пятно: так читается расстояние
     // до поверхности.

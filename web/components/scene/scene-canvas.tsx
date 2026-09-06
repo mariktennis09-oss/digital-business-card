@@ -1,7 +1,8 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useMemo, useState, type RefObject } from 'react';
+import { createDeviceModel } from '@/lib/device-model';
 import { supportsWebGl2 } from '@/lib/device';
 import { LIGHTS, SCENE_CAMERA } from '@/lib/scene-constants';
 import type { PointerNdc } from '@/lib/use-pointer-ndc';
@@ -46,6 +47,12 @@ export function SceneCanvas({
 
   const orientation = useOrientation();
 
+  // Модель строится один раз на всё время жизни сцены: она не зависит ни
+  // от секции, ни от рендерера, а пересборка сотни геометрий на каждый
+  // рендер React'а обошлась бы дороже всего остального вместе взятого.
+  const model = useMemo(() => createDeviceModel(), []);
+  useEffect(() => () => model.dispose(), [model]);
+
   // Проверка после монтирования: на сервере canvas создать негде, а решать
   // до гидратации нельзя — разметка разойдётся.
   useEffect(() => setWebglReady(supportsWebGl2()), []);
@@ -89,8 +96,14 @@ export function SceneCanvas({
             подписывается первым и отрабатывает до них. */}
         <Tumble orientation={orientation} speed={tumbleSpeed} reducedMotion={reducedMotion} />
 
-        <GroundShadow orientation={orientation} lift={lift} reducedMotion={reducedMotion} />
+        <GroundShadow
+          orientation={orientation}
+          halfExtents={model.halfExtents}
+          lift={lift}
+          reducedMotion={reducedMotion}
+        />
         <Device
+          model={model.object}
           orientation={orientation}
           pointer={pointer}
           lift={lift}
