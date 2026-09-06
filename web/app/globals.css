@@ -13,8 +13,11 @@
   --color-graphite: #8a8f98;
   --color-line: #d9d5ca;
 
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Экран до гидратации: тёмный кадр, а не белая вспышка перед заливкой. */
+  --color-base: #0a0a0a;
+
+  --font-sans: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html,
@@ -23,7 +26,7 @@ body {
 }
 
 body {
-  background: var(--color-paper);
+  background: var(--color-base);
   color: var(--color-ink);
   font-family: var(--font-sans);
   /* Разделы перелистываются, а не прокручиваются: страница не скроллится. */

@@ -3,31 +3,35 @@
 import gsap from 'gsap';
 import { useEffect, type RefObject } from 'react';
 import { grainDataUri } from '@/lib/grain';
-import { GRAIN } from '@/lib/scene-constants';
+import { GRAIN, VIGNETTE } from '@/lib/scene-constants';
 
 /**
- * Фон страницы: сплошная заливка и плёночное зерно.
+ * Фон страницы: сплошная заливка, виньетка и плёночное зерно.
  *
- * Это два разных слоя, и между ними по глубине проходит canvas. Заливка
- * лежит под сценой и отвечает за случай, когда WebGL недоступен: тогда
- * страница теряет объект, но не цвет. Зерно, наоборот, лежит поверх сцены —
- * плёночное зерно на то и плёночное, что ложится на весь кадр целиком,
- * а не под то, что в нём нарисовано.
+ * Это два слоя, и между ними по глубине проходит canvas. Заливка лежит под
+ * сценой и отвечает за случай, когда WebGL недоступен: тогда страница
+ * теряет объект, но не цвет. Виньетка и зерно, наоборот, лежат поверх
+ * сцены — это свойства кадра целиком, а не подложки под ним. Плёночное
+ * зерно на то и плёночное, что ложится и на объект тоже.
  *
  * Сам элемент заливки отдаётся наружу через `fillRef` — анимирует его
  * владелец таймлайна, а не этот компонент. Иначе смена цвета оказалась бы
  * отдельной анимацией рядом с открытием панели, а не вместе с ним.
+ * По той же причине наружу отдаётся и зерно: на пике перехода оно
+ * усиливается тем же таймлайном.
  */
 export function Backdrop({
   fillRef,
+  grainRef,
   initialColor,
   grainOpacity = GRAIN.opacity,
   grainFrequency = GRAIN.baseFrequency,
   grainOctaves = GRAIN.octaves,
 }: {
   fillRef: RefObject<HTMLDivElement | null>;
+  grainRef?: RefObject<HTMLDivElement | null>;
   initialColor: string;
-  /** Насколько зерно проступает сквозь заливку. */
+  /** Насколько зерно проступает сквозь кадр. */
   grainOpacity?: number;
   /** Размер песчинок: больше значение — мельче зерно. */
   grainFrequency?: number;
@@ -44,14 +48,23 @@ export function Backdrop({
   return (
     <>
       <div aria-hidden ref={fillRef} className="fixed inset-0 -z-30" />
-      <div
-        aria-hidden
-        className="grain fixed inset-0 -z-10"
-        style={{
-          opacity: grainOpacity,
-          backgroundImage: grainDataUri(grainFrequency, grainOctaves),
-        }}
-      />
+
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse at center, transparent ${VIGNETTE.innerStop}%, rgba(0,0,0,${VIGNETTE.opacity}) 100%)`,
+          }}
+        />
+        <div
+          ref={grainRef}
+          className="grain absolute inset-0"
+          style={{
+            opacity: grainOpacity,
+            backgroundImage: grainDataUri(grainFrequency, grainOctaves),
+          }}
+        />
+      </div>
     </>
   );
 }
