@@ -3,21 +3,21 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef, type RefObject } from 'react';
 import { Group, Quaternion } from 'three';
-import { OBJECT } from '@/lib/scene-constants';
+import { DEVICE, OBJECT } from '@/lib/scene-constants';
 import type { PointerNdc } from '@/lib/use-pointer-ndc';
 
 /**
- * Поведение центрального объекта: положение, покачивание, доворот за
+ * Поведение центрального объекта: размер, ход вверх-вниз, доворот за
  * курсором и подъём при открытой панели.
  *
- * Сама модель приходит готовой снаружи. Здесь про её устройство ничего не
- * известно намеренно: заменить прибор на другой — значит положить новый
- * файл модели, а не править этот компонент.
+ * Сама модель приходит готовой снаружи, вписанной в единичный куб. Здесь
+ * про её устройство ничего не известно намеренно: заменить прибор на
+ * другой — значит положить новый файл модели, а не править этот компонент.
  *
  * Две вложенные группы, и это не лишний уровень. Внешняя отвечает за
- * положение и доворот за курсором, внутренняя — за собственное кувыркание.
- * Смешать их в одном узле нельзя: доворот задаётся углами от курсора,
- * кувыркание — накопленным кватернионом, и одно затирало бы другое.
+ * положение и доворот за курсором, внутренняя — за собственное кувыркание
+ * и масштаб. Смешать их в одном узле нельзя: доворот задаётся углами от
+ * курсора, кувыркание — накопленным кватернионом, и одно затирало бы другое.
  */
 export function Device({
   model,
@@ -25,8 +25,10 @@ export function Device({
   pointer,
   lift,
   reducedMotion = false,
+  size = DEVICE.size,
+  bobAmplitude = OBJECT.bobAmplitude,
 }: {
-  /** Готовая группа модели: центрирована и приведена к габаритам кадра. */
+  /** Готовая группа модели: центрирована и вписана в единичный куб. */
   model: Group;
   /** Накопленная ориентация. Считает её Tumble, здесь только применяется. */
   orientation: RefObject<Quaternion>;
@@ -35,6 +37,9 @@ export function Device({
   /** 0 — объект в центре, 1 — уехал вверх за край. Ведёт таймлайн панели. */
   lift?: RefObject<{ value: number }>;
   reducedMotion?: boolean;
+  /** Размер объекта в кадре и размах хода — подбираются на стенде глазами. */
+  size?: number;
+  bobAmplitude?: number;
 }) {
   const carrier = useRef<Group>(null);
   const spinner = useRef<Group>(null);
@@ -52,11 +57,11 @@ export function Device({
 
     inner.quaternion.copy(orientation.current);
 
-    const bob = reducedMotion
+    const phase = reducedMotion
       ? 0
-      : Math.sin((state.clock.elapsedTime * Math.PI * 2) / OBJECT.bobPeriod) * OBJECT.bobAmplitude;
+      : Math.sin((state.clock.elapsedTime * Math.PI * 2) / OBJECT.bobPeriod);
 
-    outer.position.y = bob + lifted * OBJECT.liftDistance;
+    outer.position.y = phase * bobAmplitude + lifted * OBJECT.liftDistance;
 
     // Доворот за курсором: цель считается из позиции мыши, фактический угол
     // идёт к ней через lerp — объект догоняет лениво, с запаздыванием.
@@ -73,7 +78,7 @@ export function Device({
 
   return (
     <group ref={carrier}>
-      <group ref={spinner}>
+      <group ref={spinner} scale={size}>
         <primitive object={model} />
       </group>
     </group>

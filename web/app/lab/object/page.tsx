@@ -6,6 +6,10 @@ import { Backdrop } from '@/components/scene/backdrop';
 import { SceneCanvas } from '@/components/scene/scene-canvas';
 import {
   BACKDROP,
+  BOB_PRESETS,
+  DEVICE,
+  DEVICE_PRESETS,
+  OBJECT,
   SECTION_COLORS,
   SURFACE,
   TUMBLE_PRESETS,
@@ -20,9 +24,10 @@ const COLOR_KEYS = Object.keys(SECTION_COLORS) as SectionColorKey[];
  * покачивание, тень по силуэту и доворот за курсором — всё, что объект
  * умеет сам, без панели, рамки и переходов.
  *
- * Скорость кувыркания переключается здесь же: подобрать её глазами
- * быстрее, чем описывать словами и переводить в числа. Выбранное значение
- * переезжает в TUMBLE, стенд остаётся для проверки.
+ * Размер, размах хода и скорость кувыркания переключаются здесь же:
+ * подобрать их глазами быстрее, чем описывать словами и переводить
+ * в числа. Выбранные значения переезжают в константы, стенд остаётся
+ * для проверки.
  *
  * Кнопка «поднять» дёргает ту же величину, которой на странице будет
  * распоряжаться таймлайн открытия панели: проверить движение проще здесь,
@@ -36,6 +41,8 @@ export default function ObjectLabPage() {
   const [color, setColor] = useState<SectionColorKey>('home');
   const [lifted, setLifted] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
+  const [size, setSize] = useState<number>(DEVICE.size);
+  const [bob, setBob] = useState<number>(OBJECT.bobAmplitude);
 
   function switchColor(key: SectionColorKey) {
     setColor(key);
@@ -64,6 +71,8 @@ export default function ObjectLabPage() {
         pointer={pointer}
         lift={lift}
         tumbleSpeed={speed}
+        size={size}
+        bobAmplitude={bob}
       />
 
       <div className="pointer-events-none flex h-full flex-col justify-between p-6 sm:p-8">
@@ -80,6 +89,30 @@ export default function ObjectLabPage() {
             <Chip active={lifted} onClick={toggleLift}>
               {lifted ? 'опустить' : 'поднять'}
             </Chip>
+          </Row>
+
+          <Row label="Размер">
+            {DEVICE_PRESETS.map((preset) => (
+              <Chip
+                key={preset.label}
+                active={preset.size === size}
+                onClick={() => setSize(preset.size)}
+              >
+                {preset.label} · {preset.size}
+              </Chip>
+            ))}
+          </Row>
+
+          <Row label="Ход вверх-вниз">
+            {BOB_PRESETS.map((preset) => (
+              <Chip
+                key={preset.label}
+                active={preset.amplitude === bob}
+                onClick={() => setBob(preset.amplitude)}
+              >
+                {preset.label} · {preset.amplitude}
+              </Chip>
+            ))}
           </Row>
 
           <Row label="Кувыркание">

@@ -4,7 +4,7 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { createDeviceModel } from '@/lib/device-model';
 import { supportsWebGl2 } from '@/lib/device';
-import { LIGHTS, SCENE_CAMERA } from '@/lib/scene-constants';
+import { DEVICE, LIGHTS, OBJECT, SCENE_CAMERA } from '@/lib/scene-constants';
 import type { PointerNdc } from '@/lib/use-pointer-ndc';
 import { Device } from './device';
 import { GroundShadow } from './ground-shadow';
@@ -32,6 +32,8 @@ export function SceneCanvas({
   lift,
   reducedMotion = false,
   tumbleSpeed,
+  size = DEVICE.size,
+  bobAmplitude = OBJECT.bobAmplitude,
 }: {
   className?: string;
   /** Цвет секции. Уходит в фон сцены — его и будет мять глитч-пасс. */
@@ -39,8 +41,10 @@ export function SceneCanvas({
   pointer?: RefObject<PointerNdc>;
   lift?: RefObject<{ value: number }>;
   reducedMotion?: boolean;
-  /** Подмена скорости кувыркания — нужна стенду, чтобы подобрать её глазами. */
+  /** Подмена значений из констант — нужна стенду, чтобы подбирать их глазами. */
   tumbleSpeed?: number;
+  size?: number;
+  bobAmplitude?: number;
 }) {
   const [visible, setVisible] = useState(true);
   const [webglReady, setWebglReady] = useState<boolean | null>(null);
@@ -52,6 +56,13 @@ export function SceneCanvas({
   // рендер React'а обошлась бы дороже всего остального вместе взятого.
   const model = useMemo(() => createDeviceModel(), []);
   useEffect(() => () => model.dispose(), [model]);
+
+  // Модель вписана в единичный куб, поэтому её полурёбра — доли размера.
+  // Тени нужны мировые, иначе при смене размера пятно осталось бы прежним.
+  const halfExtents = useMemo(
+    () => model.halfExtents.clone().multiplyScalar(size),
+    [model, size],
+  );
 
   // Проверка после монтирования: на сервере canvas создать негде, а решать
   // до гидратации нельзя — разметка разойдётся.
@@ -98,9 +109,11 @@ export function SceneCanvas({
 
         <GroundShadow
           orientation={orientation}
-          halfExtents={model.halfExtents}
+          halfExtents={halfExtents}
           lift={lift}
           reducedMotion={reducedMotion}
+          size={size}
+          bobAmplitude={bobAmplitude}
         />
         <Device
           model={model.object}
@@ -108,6 +121,8 @@ export function SceneCanvas({
           pointer={pointer}
           lift={lift}
           reducedMotion={reducedMotion}
+          size={size}
+          bobAmplitude={bobAmplitude}
         />
       </Canvas>
     </div>

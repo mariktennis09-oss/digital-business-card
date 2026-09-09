@@ -3,7 +3,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { CanvasTexture, Matrix4, Mesh, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
-import { OBJECT, SHADOW } from '@/lib/scene-constants';
+import { DEVICE, OBJECT, SHADOW } from '@/lib/scene-constants';
 
 /**
  * Тень под прибором: размытое пятно чуть темнее фона, а не shadow map.
@@ -17,18 +17,27 @@ import { OBJECT, SHADOW } from '@/lib/scene-constants';
  * вдоль оси — это сумма её полурёбер, взвешенных модулями строки матрицы
  * поворота. Поэтому при кувыркании тень то растягивается, когда прибор
  * повёрнут к нам углом, то поджимается, когда гранью.
+ *
+ * На ходе вверх-вниз пятно расплывается и бледнеет. Без этого подъём
+ * читался бы как сдвиг картинки, а не как то, что объект отходит от
+ * поверхности.
  */
 export function GroundShadow({
   orientation,
   halfExtents,
   lift,
   reducedMotion = false,
+  size = DEVICE.size,
+  bobAmplitude = OBJECT.bobAmplitude,
 }: {
   orientation: RefObject<Quaternion>;
-  /** Полурёбра габаритной коробки объекта. Приходят вместе с моделью. */
+  /** Полурёбра габаритной коробки объекта, уже в масштабе кадра. */
   halfExtents: Vector3;
   lift?: RefObject<{ value: number }>;
   reducedMotion?: boolean;
+  /** Те же размер и размах хода, что у объекта: пятно живёт по ним. */
+  size?: number;
+  bobAmplitude?: number;
 }) {
   const mesh = useRef<Mesh>(null);
   const rotation = useRef(new Matrix4());
@@ -77,9 +86,17 @@ export function GroundShadow({
       Math.abs(m[6]) * halfExtents.y +
       Math.abs(m[10]) * halfExtents.z;
 
+    // Фаза хода считается по той же формуле и от тех же часов, что
+    // у корпуса. Берётся именно фаза, а не готовое смещение: от неё
+    // отклик тени не зависит от того, каким выставлен размах.
+    const phase = reducedMotion
+      ? 0
+      : Math.sin((state.clock.elapsedTime * Math.PI * 2) / OBJECT.bobPeriod);
+
     // Чем выше объект, тем шире и бледнее пятно: так читается расстояние
     // до поверхности.
-    const spread = 1 + lifted * SHADOW.liftResponse;
+    const spread = 1 + phase * SHADOW.bobResponse + lifted * SHADOW.liftResponse;
+    const fade = 1 - phase * SHADOW.bobResponse - lifted * SHADOW.liftResponse * 2;
 
     element.scale.set(
       acrossX * 2 * SHADOW.spread * spread,
@@ -88,20 +105,16 @@ export function GroundShadow({
     );
 
     const shadowMaterial = element.material as MeshBasicMaterial;
-    shadowMaterial.opacity = Math.max(0, SHADOW.opacity * (1 - lifted * SHADOW.liftResponse * 2));
+    shadowMaterial.opacity = Math.max(0, SHADOW.opacity * fade);
 
-    // Покачивание считается по той же формуле и от тех же часов, что
-    // у корпуса, и повторяется вполсилы: полностью синхронное движение
+    // Пятно повторяет ход вполсилы: полностью синхронное движение
     // выглядело бы приклеенным.
-    const bob = reducedMotion
-      ? 0
-      : Math.sin((state.clock.elapsedTime * Math.PI * 2) / OBJECT.bobPeriod) * OBJECT.bobAmplitude;
-
-    element.position.y = SHADOW.offsetY + bob * 0.4 - lifted * OBJECT.liftDistance * 0.18;
+    element.position.y =
+      -size * SHADOW.drop + phase * bobAmplitude * 0.4 - lifted * OBJECT.liftDistance * 0.18;
   });
 
   return (
-    <mesh ref={mesh} material={material} position={[0, SHADOW.offsetY, SHADOW.z]}>
+    <mesh ref={mesh} material={material} position={[0, -size * SHADOW.drop, SHADOW.z]}>
       <planeGeometry args={[1, 1]} />
     </mesh>
   );

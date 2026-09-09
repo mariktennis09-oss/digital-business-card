@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { Box3, BufferGeometry, Group, Mesh, MeshStandardMaterial, Vector3 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildRuggedModule } from './rugged-module';
-import { DEVICE, ENVIRONMENT } from './scene-constants';
+import { ENVIRONMENT } from './scene-constants';
 
 export interface DeviceModel {
-  /** Готовая к сцене группа: центрирована и приведена к габаритам кадра. */
+  /** Готовая к сцене группа: центрирована и вписана в единичный куб. */
   object: Group;
-  /** Полурёбра габаритной коробки. По ним тень считает ширину силуэта. */
+  /** Полурёбра габаритной коробки в тех же единицах. По ним тень считает силуэт. */
   halfExtents: Vector3;
   dispose(): void;
 }
@@ -17,9 +17,12 @@ export interface DeviceModel {
  *
  * Сама модель ничего не знает про кадр: она собрана в метрах, стоит базой
  * на нуле и состоит из сотни отдельных мешей. Здесь она склеивается по
- * материалам, центрируется и масштабируется под габарит кадра — всё, что
- * зависит от сцены, живёт тут, а не в файле модели. Положить новую версию
- * поверх старой можно, не трогая ничего вокруг.
+ * материалам, центрируется и вписывается в единичный куб.
+ *
+ * Именно в единичный, а не сразу в нужный размер: тогда размер объекта
+ * в кадре остаётся одним числом снаружи, его можно менять на ходу, и любая
+ * следующая модель встанет по нему же — какими бы ни были её собственные
+ * габариты.
  *
  * Склейка нужна ради кадрового цикла: сотня узлов — это сотня обновлений
  * матриц и сотня проверок отсечения каждый кадр, тогда как рисуется всегда
@@ -79,16 +82,15 @@ export function createDeviceModel(): DeviceModel {
   // Исходные геометрии больше не нужны: в дереве сцены их не будет.
   sources.forEach((geometry) => geometry.dispose());
 
-  // Модель стоит базой на нуле и имеет свой масштаб. Кадру нужен объект
-  // в центре и нужного размера, поэтому и то, и другое пересчитывается —
-  // от габарита, а не от чисел внутри модели.
+  // Модель стоит базой на нуле и имеет свой масштаб. Центр и размер
+  // пересчитываются от габаритной коробки, а не от чисел внутри модели.
   const bounds = new Box3().setFromObject(object);
   const size = bounds.getSize(new Vector3());
   const center = bounds.getCenter(new Vector3());
 
   geometries.forEach((geometry) => geometry.translate(-center.x, -center.y, -center.z));
 
-  const scale = DEVICE.targetSize / Math.max(size.x, size.y, size.z);
+  const scale = 1 / Math.max(size.x, size.y, size.z);
   object.scale.setScalar(scale);
 
   return {
