@@ -32,11 +32,18 @@ export function useOrientation(): RefObject<Quaternion> {
  */
 export function Tumble({
   orientation,
+  speeds = TUMBLE,
   speed = 1,
   reducedMotion = false,
 }: {
   orientation: RefObject<Quaternion>;
-  /** Общий множитель скорости. Соотношение осей при этом сохраняется. */
+  /**
+   * Угловые скорости по осям. Вынесены в параметр, потому что независимо
+   * кувыркающихся объектов в сцене больше одного: у оболочки свои,
+   * несоизмеримые с объектом, — на этом и держится расслоение.
+   */
+  speeds?: { x: number; y: number; z: number };
+  /** Общий множитель. Соотношение осей при этом сохраняется. */
   speed?: number;
   reducedMotion?: boolean;
 }) {
@@ -48,11 +55,7 @@ export function Tumble({
       return;
     }
 
-    angles.current.set(
-      TUMBLE.x * speed * delta,
-      TUMBLE.y * speed * delta,
-      TUMBLE.z * speed * delta,
-    );
+    angles.current.set(speeds.x * speed * delta, speeds.y * speed * delta, speeds.z * speed * delta);
     step.current.setFromEuler(angles.current);
 
     // Нормализация обязательна: за десятки тысяч умножений накапливается

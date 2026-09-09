@@ -4,8 +4,9 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { createDeviceModel } from '@/lib/device-model';
 import { supportsWebGl2 } from '@/lib/device';
-import { DEVICE, LIGHTS, OBJECT, SCENE_CAMERA } from '@/lib/scene-constants';
+import { DEVICE, FRAME, LIGHTS, OBJECT, SCENE_CAMERA } from '@/lib/scene-constants';
 import type { PointerNdc } from '@/lib/use-pointer-ndc';
+import { DashedFrame } from './dashed-frame';
 import { Device } from './device';
 import { GroundShadow } from './ground-shadow';
 import { SceneBackground } from './scene-background';
@@ -50,6 +51,10 @@ export function SceneCanvas({
   const [webglReady, setWebglReady] = useState<boolean | null>(null);
 
   const orientation = useOrientation();
+
+  // У оболочки своя ориентация и свои скорости. Общий кватернион на двоих
+  // означал бы, что рамка — обводка объекта, а нужно ровно обратное.
+  const frameOrientation = useOrientation();
 
   // Модель строится один раз на всё время жизни сцены: она не зависит ни
   // от секции, ни от рендерера, а пересборка сотни геометрий на каждый
@@ -106,6 +111,11 @@ export function SceneCanvas({
         {/* Стоит раньше потребителей ориентации: его кадровый обработчик
             подписывается первым и отрабатывает до них. */}
         <Tumble orientation={orientation} speed={tumbleSpeed} reducedMotion={reducedMotion} />
+        <Tumble
+          orientation={frameOrientation}
+          speeds={FRAME.tumble}
+          reducedMotion={reducedMotion}
+        />
 
         <GroundShadow
           orientation={orientation}
@@ -118,6 +128,14 @@ export function SceneCanvas({
         <Device
           model={model.object}
           orientation={orientation}
+          pointer={pointer}
+          lift={lift}
+          reducedMotion={reducedMotion}
+          size={size}
+          bobAmplitude={bobAmplitude}
+        />
+        <DashedFrame
+          orientation={frameOrientation}
           pointer={pointer}
           lift={lift}
           reducedMotion={reducedMotion}
