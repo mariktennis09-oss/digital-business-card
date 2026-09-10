@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Profile } from '@/lib/api';
-import { CommandPalette } from './command-palette';
+import { useScrollState } from '@/lib/use-scroll-state';
+import { CommandPanel, NO_EFFECTS, type Effects } from './command-panel';
+import { CrtOverlay } from './crt-overlay';
 import { ExperienceList } from './experience-list';
 import { Hero } from './hero';
+import { IntroCurtain, INTRO_DURATION_MS } from './intro-curtain';
 import { Manifesto } from './manifesto';
 import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
@@ -13,7 +16,8 @@ import { Works } from './works';
 
 /**
  * Клиентская оболочка страницы. Данные приходят готовыми с сервера —
- * здесь только то, что требует браузера: клавиша «/» и состояние палитры.
+ * здесь только то, что требует браузера: клавиша «/», состояние панели,
+ * режимы эффектов и блокировка прокрутки на время интро.
  *
  * Слоган живёт в коде, а не в API. Это не контент визитки, а строка
  * фирменного стиля: она разбивается на плашки по правилам вёрстки, и
@@ -22,10 +26,30 @@ import { Works } from './works';
 const SLOGAN = 'Frontend Developer Shipping Real Products';
 
 export function Site({ profile }: { profile: Profile }) {
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [effects, setEffects] = useState<Effects>(NO_EFFECTS);
+  const { activeSection, tone } = useScrollState();
 
-  const openPalette = useCallback(() => setPaletteOpen(true), []);
-  const closePalette = useCallback(() => setPaletteOpen(false), []);
+  const openPanel = useCallback(() => setPanelOpen(true), []);
+  const closePanel = useCallback(() => setPanelOpen(false), []);
+
+  // Пока идёт сборка, страница не прокручивается: интро иначе проматывают
+  // раньше, чем оно доиграет, и от него остаётся только дёрганый кусок.
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    document.body.dataset.intro = 'running';
+    const timer = window.setTimeout(() => {
+      delete document.body.dataset.intro;
+    }, INTRO_DURATION_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      delete document.body.dataset.intro;
+    };
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -34,14 +58,14 @@ export function Site({ profile }: { profile: Profile }) {
       }
 
       // Пока курсор в поле ввода, «/» — обычный символ. Без этой проверки
-      // палитра перехватывала бы саму себя.
+      // панель перехватывала бы саму себя.
       const active = document.activeElement;
       if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
         return;
       }
 
       event.preventDefault();
-      setPaletteOpen(true);
+      setPanelOpen(true);
     };
 
     document.addEventListener('keydown', onKeyDown);
@@ -51,21 +75,41 @@ export function Site({ profile }: { profile: Profile }) {
   const email = profile.links.find((link) => link.url.startsWith('mailto:')) ?? null;
   const social = profile.links.filter((link) => link !== email);
 
+  const shell = [
+    'shell',
+    panelOpen ? 'shell--pushed' : '',
+    effects.bw ? 'shell--bw' : '',
+    effects.negative ? 'shell--negative' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <>
-      <SiteHeader onOpenPalette={openPalette} />
+      <div className={shell}>
+        <SiteHeader tone={tone} activeSection={activeSection} onOpenPalette={openPanel} />
 
-      <main>
-        <Hero slogan={SLOGAN} since={startingYear(profile)} email={email} />
-        <Manifesto name={profile.name} description={profile.description} />
-        <Works projects={profile.projects} />
-        <ExperienceList experience={profile.experience} />
-        <Stack skills={profile.skills} />
-      </main>
+        <main>
+          <Hero slogan={SLOGAN} since={startingYear(profile)} email={email} />
+          <Manifesto name={profile.name} description={profile.description} />
+          <Works projects={profile.projects} />
+          <ExperienceList experience={profile.experience} />
+          <Stack skills={profile.skills} />
+        </main>
 
-      <SiteFooter slogan={SLOGAN} name={profile.name} email={email} links={social} />
+        <SiteFooter slogan={SLOGAN} name={profile.name} email={email} links={social} />
+      </div>
 
-      <CommandPalette open={paletteOpen} onClose={closePalette} />
+      <CommandPanel
+        open={panelOpen}
+        effects={effects}
+        onClose={closePanel}
+        onEffects={setEffects}
+      />
+
+      {effects.crt ? <CrtOverlay /> : null}
+
+      <IntroCurtain />
     </>
   );
 }

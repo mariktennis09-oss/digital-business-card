@@ -14,7 +14,7 @@ import { WordChips } from './word-chips';
  */
 export function Stack({ skills }: { skills: Skill[] }) {
   return (
-    <section id="stack" className="px-5 pb-[100px] sm:px-10 sm:pb-[160px]">
+    <section id="stack" data-tone="light" className="px-5 pb-[100px] sm:px-10 sm:pb-[160px]">
       <div className="mx-auto max-w-[1600px]">
         <Reveal className="flex justify-end">
           <WordChips

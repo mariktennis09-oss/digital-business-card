@@ -21,7 +21,7 @@ export function SiteFooter({
   const year = new Date().getFullYear();
 
   return (
-    <footer id="connect" className="bg-surface px-5 py-[80px] sm:px-10 sm:py-[120px]">
+    <footer id="connect" data-tone="light" className="bg-surface px-5 py-[80px] sm:px-10 sm:py-[120px]">
       <div className="mx-auto max-w-[1600px]">
         <Reveal className="flex justify-center">
           <WordChips

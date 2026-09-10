@@ -12,7 +12,7 @@ import { WordChips } from './word-chips';
  */
 export function ExperienceList({ experience }: { experience: Experience[] }) {
   return (
-    <section id="experience" className="px-5 py-[100px] sm:px-10 sm:py-[160px]">
+    <section id="experience" data-tone="light" className="px-5 py-[100px] sm:px-10 sm:py-[160px]">
       <div className="mx-auto max-w-[1600px]">
         <Reveal className="flex justify-end">
           <WordChips

@@ -26,28 +26,34 @@
   --font-prose: var(--font-tinos), 'Times New Roman', Times, serif;
 }
 
-:root {
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 /*
- * Режимы из командной палитры. Оба переопределяют те же переменные, что
- * задаёт тема, — поэтому ничего, кроме класса на <html>, менять не нужно:
- * все утилиты ссылаются на переменные, а не на литералы.
+ * ТОКЕНЫ ДВИЖЕНИЯ.
+ *
+ * Кривых три, длительностей шесть, и больше нигде на странице не появляется
+ * ни одной. Именно поэтому движение читается как одна система: элементы
+ * разной природы замедляются одинаково.
+ *
+ * Правило распределения: форма и размер — самая долгая кривая, цвет —
+ * средняя, микро-взаимодействия — короткая с перелётом.
  */
-.mode-bw {
-  --color-lilac: var(--color-surface);
-  --color-pink: var(--color-surface);
-  --color-yellow: var(--color-surface);
-  --color-yellow-hot: var(--color-surface);
-}
+:root {
+  --e-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --e-soft: cubic-bezier(0.13, 0.47, 0.13, 0.98);
+  --e-snap: cubic-bezier(1, -0.5, 0, 1.5);
 
-.mode-negative {
-  --color-paper: #0d0d0e;
-  --color-ink: #faf6ef;
-  --color-surface: #1c1c1e;
-  --color-ink-soft: #f1ede7;
-  --color-line: #6a6a70;
+  --t-fast: 0.3s;
+  --t-base: 0.4s;
+  --t-filter: 0.5s;
+  --t-fade: 0.8s;
+  --t-morph: 1.2s;
+
+  --stagger-tight: 75ms;
+  --stagger-loose: 200ms;
+  /* Ни одна цепочка не ждёт дольше секунды. */
+  --stagger-cap: 1000ms;
+
+  --panel-width: 300px;
+  --header-height: 76px;
 }
 
 html {
@@ -60,6 +66,11 @@ body {
   color: var(--color-ink);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Пока идёт интро, страница не прокручивается: сборка должна досчитаться. */
+body[data-intro='running'] {
+  overflow: hidden;
 }
 
 /*
@@ -78,40 +89,102 @@ body {
 .chip {
   display: inline-block;
   padding: 0.06em 0.28em;
-  transition:
-    opacity 0.3s var(--ease),
-    transform 0.3s var(--ease);
-}
-
-.chip--pill {
-  border-radius: 999px;
-}
-
-.chip--box {
-  border-radius: 4px;
 }
 
 /*
- * Появление секций и чипов. Задержка чипа берётся из переменной, которую
- * ставит разметка: последовательность важнее одинаковости.
+ * Морфинг формы. Плашки умеют перетекать между пилюлей и прямоугольником,
+ * и делают это при смене состояния, а не по наведению: интерфейс «дышит»
+ * формой сам по себе, а не в ответ на мышь.
+ */
+.chip,
+.morph {
+  transition: border-radius var(--t-morph) var(--e-expo);
+}
+
+.chip--pill,
+.morph--pill {
+  border-radius: 999px;
+}
+
+.chip--box,
+.morph--box {
+  border-radius: 2px;
+}
+
+.morph {
+  transition:
+    border-radius var(--t-morph) var(--e-expo),
+    background-color var(--t-base) var(--e-expo),
+    color var(--t-base) var(--e-expo),
+    width var(--t-morph) var(--e-expo);
+}
+
+/*
+ * ЧЕТЫРЕ ПРИМИТИВА ПОЯВЛЕНИЯ.
+ *
+ * Весь контент завёрнут в них, вручную не анимируется ничего. Разница
+ * между примитивами только в начальном состоянии и в кривой — конечное
+ * состояние у всех одно, поэтому их можно смешивать в одной группе.
  */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition:
-    opacity 0.3s var(--ease),
-    transform 0.3s var(--ease);
+  transition-property: opacity, transform, clip-path;
+  transition-duration: var(--t-base);
+  transition-timing-function: var(--e-soft);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: transform, opacity;
+}
+
+.reveal--slide {
+  transform: translateY(72px);
+}
+
+.reveal--scale {
+  transform: scale(0.8);
+}
+
+.reveal--fade {
+  transition-duration: var(--t-fade);
+  transition-timing-function: linear;
+}
+
+/* Картинки открываются шторкой, а не проявляются: фейд у прямоугольника
+   выглядит как ошибка загрузки, шторка — как намерение. */
+.reveal--mask {
+  opacity: 1;
+  clip-path: inset(100% 0 0 0);
+  transition-duration: var(--t-fade);
+  transition-timing-function: var(--e-expo);
 }
 
 .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  clip-path: inset(0 0 0 0);
+  will-change: auto;
+}
+
+/*
+ * Плашки внутри появляющейся группы выезжают по очереди. Сама группа при
+ * этом стоит на месте: иначе слова ехали бы дважды — вместе с контейнером
+ * и по отдельности.
+ */
+.chips.reveal {
   opacity: 1;
   transform: none;
 }
 
 .chips.reveal .chip {
   opacity: 0;
-  transform: translateY(10px);
-  transition-delay: calc(var(--chip-index, 0) * 60ms);
+  transform: translateY(72px);
+  transition:
+    opacity var(--t-base) var(--e-soft),
+    transform var(--t-base) var(--e-soft),
+    border-radius var(--t-morph) var(--e-expo);
+  transition-delay: min(
+    calc(var(--reveal-delay, 0ms) + var(--chip-index, 0) * var(--stagger-tight)),
+    var(--stagger-cap)
+  );
 }
 
 .chips.reveal.is-visible .chip {
@@ -119,44 +192,250 @@ body {
   transform: none;
 }
 
-/* Мигающий блок-курсор в терминальном квадрате шапки. */
-@keyframes caret-blink {
-  50% {
+/*
+ * ИНТРО.
+ *
+ * Собрано на анимациях, а не на переходах по классу от JavaScript: тогда
+ * сборка идёт сама, с первого кадра, и не зависит от того, когда доедет
+ * гидратация. Без JavaScript страница просто соберётся и останется.
+ */
+@keyframes intro-slide {
+  from {
     opacity: 0;
+    transform: translateY(72px);
+  }
+}
+
+@keyframes intro-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+.intro-item {
+  animation: intro-slide var(--t-base) var(--e-soft) both;
+  animation-delay: var(--intro-delay, 0ms);
+}
+
+.intro-item--scale {
+  animation-name: intro-scale;
+}
+
+/*
+ * Шторка интро — восемь колонок с разбегом. Верхняя кромка получается
+ * рваной, лесенкой: это тот же приём, которым в референсе закрывается
+ * экран при переходе между страницами.
+ */
+@keyframes curtain-lift {
+  to {
+    transform: translateY(-101%);
+  }
+}
+
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  pointer-events: none;
+}
+
+.curtain__column {
+  background: var(--color-ink);
+  animation: curtain-lift 0.6s var(--e-expo) forwards;
+  animation-delay: calc(300ms + var(--column-index) * 40ms);
+}
+
+/*
+ * TEXT ROLL.
+ *
+ * Подпись лежит в кнопке дважды, контейнер высотой ровно в кегль. На
+ * наведении стопка уезжает вверх на свою высоту, и вторая копия встаёт
+ * на место первой.
+ */
+.roll {
+  display: block;
+  height: 1em;
+  overflow: hidden;
+}
+
+.roll__stack {
+  display: block;
+  transition: transform var(--t-base) var(--e-expo);
+}
+
+.roll__line {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+
+a:hover .roll__stack,
+button:hover .roll__stack,
+a:focus-visible .roll__stack,
+button:focus-visible .roll__stack {
+  transform: translateY(-100%);
+}
+
+/*
+ * Мигающая каретка. Жёсткий щелчок без затухания — плавное мигание
+ * читается как индикатор загрузки, а нужен курсор терминала.
+ */
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 0;
+  }
+  50%,
+  100% {
+    opacity: 1;
   }
 }
 
 .caret {
-  animation: caret-blink 1s step-end infinite;
+  animation: caret-blink 1.5s step-end infinite;
 }
 
-/*
- * Покачивание консоли. Ровно настолько, чтобы объект выглядел лежащим
- * в воздухе, а не приклеенным к странице.
- */
+/* Покачивание консоли — ровно настолько, чтобы объект не выглядел
+   приклеенным к странице. */
 @keyframes console-rock {
-  0%,
-  100% {
+  from {
     transform: rotate(-1.5deg);
   }
-  50% {
+  to {
     transform: rotate(1.5deg);
   }
 }
 
 .console-rock {
-  animation: console-rock 8s ease-in-out infinite;
+  animation: console-rock 8s ease-in-out infinite alternate;
   transform-origin: 50% 70%;
+}
+
+/* Ховер по карточке кейса — только масштаб, и тот едва заметный. */
+.card {
+  transition: transform var(--t-base) var(--e-expo);
+}
+
+a:hover > .card,
+a:focus-visible > .card {
+  transform: scale(1.015);
+}
+
+/*
+ * ОБОЛОЧКА И ПАНЕЛЬ.
+ *
+ * Терминал не накрывает страницу, а раздвигает её: контент уезжает влево
+ * ровно на ширину панели. Фильтры режимов применяются к той же оболочке,
+ * поэтому сама панель остаётся нормальной и в инверсии читается.
+ */
+.shell {
+  transition:
+    transform var(--t-base) var(--e-expo),
+    filter var(--t-filter) ease;
+}
+
+.shell--pushed {
+  transform: translateX(calc(var(--panel-width) * -1));
+}
+
+.shell--bw {
+  filter: grayscale(1);
+}
+
+.shell--negative {
+  filter: invert(1);
+}
+
+.shell--bw.shell--negative {
+  filter: grayscale(1) invert(1);
+}
+
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  height: 100dvh;
+  width: var(--panel-width);
+  max-width: 88vw;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform var(--t-base) var(--e-expo);
+}
+
+.panel--open {
+  transform: none;
+}
+
+/*
+ * CRT-оверлей. Включается командой, по умолчанию выключен: постоянные
+ * скан-линии поверх текста мешают читать.
+ */
+@keyframes crt-scan {
+  to {
+    background-position: 0 5px;
+  }
+}
+
+@keyframes crt-hue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.crt {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  pointer-events: none;
+  transform: scale(1.1);
+}
+
+.crt__lines {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.08) 0 1px,
+    transparent 1px 4px
+  );
+  animation: crt-scan 0.4s linear infinite;
+}
+
+.crt__hue {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background: linear-gradient(90deg, #f00, #0f0, #00f);
+  animation: crt-hue 12s linear infinite;
+}
+
+/*
+ * ПИНЫ. Сделаны на sticky, а не пересчётом позиций в кадровом цикле:
+ * браузер держит это сам, без единой строки JavaScript и без рассинхрона
+ * при изменении размера окна.
+ */
+.pin {
+  position: sticky;
+  top: calc(var(--header-height) + 24px);
 }
 
 /* Фокус виден всегда: страница должна работать с клавиатуры. */
 :focus-visible {
-  outline: 2px solid var(--color-ink);
+  outline: 2px solid currentColor;
   outline-offset: 3px;
 }
 
-.mode-negative :focus-visible {
-  outline-color: var(--color-ink);
+/* Узкий экран: пины и параллакс отключаются — сдвигать нечего
+   относительно чего, а sticky-заголовок съедает половину высоты. */
+@media (max-width: 899px) {
+  .pin {
+    position: static;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -165,14 +444,34 @@ body {
   }
 
   .console-rock,
-  .caret {
+  .caret,
+  .crt__lines,
+  .crt__hue,
+  .curtain__column {
     animation: none;
+  }
+
+  .curtain {
+    display: none;
+  }
+
+  .intro-item {
+    animation: none;
+  }
+
+  .pin {
+    position: static;
   }
 
   .reveal,
   .chips.reveal .chip {
     opacity: 1;
     transform: none;
+    clip-path: none;
+    transition: none;
+  }
+
+  .roll__stack {
     transition: none;
   }
 }

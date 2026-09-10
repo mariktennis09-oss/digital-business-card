@@ -1,23 +1,32 @@
 'use client';
 
-import { useEffect, useRef, type ElementType, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ElementType, type ReactNode } from 'react';
 
 /**
- * Появление при прокрутке. Наблюдатель отключается сразу после первого
- * срабатывания: элемент показывается один раз и больше не мигает, когда
- * читатель прокручивает страницу назад.
+ * Появление при прокрутке — четыре примитива на весь сайт.
  *
- * Класс переключается на самом элементе, а не в состоянии React: появление
- * целиком описано в CSS, включая задержки чипов, и перерисовывать дерево
- * ради него незачем.
+ * Разница между ними только в начальном состоянии и кривой; конечное
+ * состояние у всех одно, поэтому их можно мешать внутри одной группы,
+ * не рассинхронизируя каскад.
+ *
+ * Наблюдатель отключается сразу после первого срабатывания. Появление,
+ * повторяющееся при каждом возврате скролла вверх, превращает страницу
+ * в мигалку и мешает перечитывать.
  */
+export type RevealVariant = 'slide' | 'scale' | 'fade' | 'mask';
+
 export function Reveal({
   children,
   as: Tag = 'div',
+  variant = 'slide',
+  delay = 0,
   className = '',
 }: {
   children: ReactNode;
   as?: ElementType;
+  variant?: RevealVariant;
+  /** Задержка в миллисекундах. Каскад внутри группы — 75, между группами — 200. */
+  delay?: number;
   className?: string;
 }) {
   const element = useRef<HTMLElement>(null);
@@ -28,7 +37,7 @@ export function Reveal({
       return;
     }
 
-    // Без IntersectionObserver — просто показываем: отсутствие анимации
+    // Без IntersectionObserver просто показываем: отсутствие анимации
     // лучше, чем невидимый контент.
     if (typeof IntersectionObserver === 'undefined') {
       node.classList.add('is-visible');
@@ -44,7 +53,9 @@ export function Reveal({
           }
         }
       },
-      { threshold: 0.15, rootMargin: '0px 0px -10% 0px' },
+      // Двадцать процентов высоты элемента: срабатывает, когда блок уже
+      // читается, а не когда он едва задел край экрана.
+      { threshold: 0.2 },
     );
 
     observer.observe(node);
@@ -52,7 +63,11 @@ export function Reveal({
   }, []);
 
   return (
-    <Tag ref={element} className={`reveal ${className}`}>
+    <Tag
+      ref={element}
+      className={`reveal reveal--${variant} ${className}`}
+      style={{ '--reveal-delay': `${delay}ms` } as CSSProperties}
+    >
       {children}
     </Tag>
   );
