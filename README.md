@@ -6,7 +6,7 @@
 **Стек:** TypeScript · Node.js · NestJS · Prisma · PostgreSQL · GraphQL (code-first) · Docker
 
 - Sandbox (развёрнутая версия): _ссылка добавляется после деплоя_
-- Исходный код: https://github.com/mariktennis09-oss/business-card-website-
+- Исходный код: https://github.com/mariktennis09-oss/digital-business-card
 - Контракт API: [`schema.gql`](./schema.gql) — сгенерирован из кода и закоммичен
 
 ---

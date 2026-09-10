@@ -144,7 +144,7 @@ export const seedData: SeedData = {
     },
     {
       name: 'Backend Business Card',
-      repoUrl: 'https://github.com/mariktennis09-oss/business-card-website-',
+      repoUrl: 'https://github.com/mariktennis09-oss/digital-business-card',
       description: 'Business card backend on NestJS, GraphQL, Prisma and Docker — this very API.',
     },
   ],
