@@ -28,6 +28,7 @@ const PROFILE_QUERY = `query ProfileForSite {
       company
       position
       period
+      startDate
       isCurrent
       durationMonths
       achievements { id text }
@@ -59,7 +60,10 @@ export interface Experience {
   id: string;
   company: string;
   position: string;
+  /** Готовая к показу строка периода: форматирует её бэкенд, не сайт. */
   period: string;
+  /** ISO-дата начала. Нужна там, где считают год, а не показывают период. */
+  startDate: string;
   isCurrent: boolean;
   durationMonths: number;
   achievements: Achievement[];

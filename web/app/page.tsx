@@ -1,4 +1,4 @@
-import { Portfolio } from '@/components/portfolio/portfolio';
+import { Site } from '@/components/site';
 import { fetchProfile } from '@/lib/api';
 
 /**
@@ -9,5 +9,5 @@ import { fetchProfile } from '@/lib/api';
 export default async function HomePage() {
   const profile = await fetchProfile();
 
-  return <Portfolio profile={profile} />;
+  return <Site profile={profile} />;
 }

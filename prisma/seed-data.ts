@@ -62,7 +62,11 @@ export const seedData: SeedData = {
       'Have shipped commercial projects all the way to production.',
   },
 
+  // Почта — такая же ссылка, как остальные, просто со схемой mailto. Иначе
+  // адрес пришлось бы держать в вёрстке сайта, а весь контент обязан
+  // приходить из API.
   links: [
+    { label: 'Email', url: 'mailto:vfhrtefvbasfdb@gmail.com' },
     { label: 'GitHub', url: 'https://github.com/mariktennis09-oss' },
     { label: 'Portfolio', url: 'https://domuvmorya.ru' },
   ],

@@ -1,107 +1,178 @@
 @import 'tailwindcss';
 
 /*
- * Направление «Чертёж»: бумага, тушь, синяя линия.
- * Значения повторяют PALETTE из lib/animation-constants.ts — там же они
- * попадают в шейдеры, поэтому цвет частиц и цвет текста задаются один раз.
+ * Жанр — «playful brutalism»: тёплая бумага, чёрные блоки встык, пиксельный
+ * дисплейный шрифт против классической антиквы. Градиентов, стеклянных
+ * размытий и цветных теней в этой системе нет ни одного.
+ *
+ * Акцентные цвета работают только как заливка за словами и тегами. Текстом
+ * они не бывают никогда: на бумажном фоне у них не хватает контраста.
  */
 @theme {
-  --color-paper: #f2f0ea;
-  --color-ink: #0b1a2b;
-  --color-blueprint: #1d6fa8;
-  --color-mark: #c64a2b;
-  --color-graphite: #8a8f98;
-  --color-line: #d9d5ca;
+  --color-paper: #faf6ef;
+  --color-surface: #f1ede7;
+  --color-ink: #0d0d0e;
+  --color-ink-soft: #1c1c1e;
+  --color-line: #3d3d40;
 
-  /* Экран до гидратации: тёмный кадр, а не белая вспышка перед заливкой. */
-  --color-base: #0a0a0a;
+  --color-lilac: #e9e3f3;
+  --color-pink: #ffd8f5;
+  --color-yellow: #fff490;
+  --color-yellow-hot: #ffe500;
 
-  --font-sans: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono-face), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: var(--font-handjet), ui-monospace, monospace;
+  --font-ui: var(--font-archivo-narrow), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-prose: var(--font-tinos), 'Times New Roman', Times, serif;
 }
 
-html,
-body {
-  height: 100%;
+:root {
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * Режимы из командной палитры. Оба переопределяют те же переменные, что
+ * задаёт тема, — поэтому ничего, кроме класса на <html>, менять не нужно:
+ * все утилиты ссылаются на переменные, а не на литералы.
+ */
+.mode-bw {
+  --color-lilac: var(--color-surface);
+  --color-pink: var(--color-surface);
+  --color-yellow: var(--color-surface);
+  --color-yellow-hot: var(--color-surface);
+}
+
+.mode-negative {
+  --color-paper: #0d0d0e;
+  --color-ink: #faf6ef;
+  --color-surface: #1c1c1e;
+  --color-ink-soft: #f1ede7;
+  --color-line: #6a6a70;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--color-paper);
 }
 
 body {
-  background: var(--color-base);
+  background: var(--color-paper);
   color: var(--color-ink);
-  font-family: var(--font-sans);
-  /* Разделы перелистываются, а не прокручиваются: страница не скроллится. */
-  overflow: hidden;
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Лейблы, номера и подписи — моноширинным, как аннотации на чертеже. */
-.label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-graphite);
+/*
+ * WORD-CHIPS — главный узнаваемый приём.
+ *
+ * Каждое слово заголовка сидит в собственной плашке. Форма и цвет
+ * чередуются по кругу из пяти, поэтому соседние слова никогда не совпадают.
+ * Межстрочное меньше единицы: строки заходят друг на друга на пару
+ * пикселей, и блок читается как набор наклеек, а не как обычный заголовок.
+ */
+.chips {
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.06em 0.28em;
+  transition:
+    opacity 0.3s var(--ease),
+    transform 0.3s var(--ease);
+}
+
+.chip--pill {
+  border-radius: 999px;
+}
+
+.chip--box {
+  border-radius: 4px;
 }
 
 /*
- * Координатная сетка чертежа. Лежит поверх canvas и под контентом, кликов
- * не ловит. Рисуется градиентами, а не картинкой: масштабируется без потерь
- * и ничего не догружает.
+ * Появление секций и чипов. Задержка чипа берётся из переменной, которую
+ * ставит разметка: последовательность важнее одинаковости.
  */
-.blueprint-grid::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -5;
-  pointer-events: none;
-  background-image:
-    linear-gradient(
-      to right,
-      color-mix(in srgb, var(--color-blueprint) 8%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--color-blueprint) 8%, transparent) 1px,
-      transparent 1px
-    );
-  background-size: 48px 48px;
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.3s var(--ease),
+    transform 0.3s var(--ease);
 }
 
-/* Нативный курсор прячется только когда собственный реально смонтирован. */
-.cursor-hidden,
-.cursor-hidden * {
-  cursor: none;
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
 }
 
-/* Над интерактивным элементом кольцо инвертирует то, что под ним. */
-.cursor-ring--active {
-  mix-blend-mode: difference;
-  border-color: var(--color-paper);
+.chips.reveal .chip {
+  opacity: 0;
+  transform: translateY(10px);
+  transition-delay: calc(var(--chip-index, 0) * 60ms);
 }
 
-/* Фокус виден всегда: навигация должна работать с клавиатуры. */
+.chips.reveal.is-visible .chip {
+  opacity: 1;
+  transform: none;
+}
+
+/* Мигающий блок-курсор в терминальном квадрате шапки. */
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.caret {
+  animation: caret-blink 1s step-end infinite;
+}
+
+/*
+ * Покачивание консоли. Ровно настолько, чтобы объект выглядел лежащим
+ * в воздухе, а не приклеенным к странице.
+ */
+@keyframes console-rock {
+  0%,
+  100% {
+    transform: rotate(-1.5deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
+  }
+}
+
+.console-rock {
+  animation: console-rock 8s ease-in-out infinite;
+  transform-origin: 50% 70%;
+}
+
+/* Фокус виден всегда: страница должна работать с клавиатуры. */
 :focus-visible {
-  outline: 2px solid var(--color-blueprint);
+  outline: 2px solid var(--color-ink);
   outline-offset: 3px;
 }
 
-/*
- * Плёночное зерно. feTurbulence в data-URI: бинарного файла нет, загружать
- * нечего, и текстура не зависит от цвета под ней. mix-blend-mode оставляет
- * зерно текстурой, а не серой плёнкой поверх заливки.
- */
-.grain {
-  pointer-events: none;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+.mode-negative :focus-visible {
+  outline-color: var(--color-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+  html {
+    scroll-behavior: auto;
+  }
+
+  .console-rock,
+  .caret {
+    animation: none;
+  }
+
+  .reveal,
+  .chips.reveal .chip {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
