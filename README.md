@@ -5,7 +5,12 @@
 
 **Стек:** TypeScript · Node.js · NestJS · Prisma · PostgreSQL · GraphQL (code-first) · Docker
 
-- Sandbox (развёрнутая версия): _ссылка добавляется после деплоя_
+- **Apollo Sandbox (развёрнутая версия):**
+  https://digital-business-card-two-red.vercel.app/graphql — открывается
+  с уже подставленным запросом из задания, достаточно нажать ▶
+- Проверка живости: https://digital-business-card-two-red.vercel.app/health
+- Сайт-визитка, потребитель этого API:
+  https://digital-business-card-web-topaz.vercel.app
 - Исходный код: https://github.com/mariktennis09-oss/digital-business-card
 - Контракт API: [`schema.gql`](./schema.gql) — сгенерирован из кода и закоммичен
 
