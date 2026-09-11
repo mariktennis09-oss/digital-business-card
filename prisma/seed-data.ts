@@ -6,8 +6,10 @@ import { PROFILE_SLUG } from '../src/profile/profile.constants';
  * ровно то, что отдаёт API после сида (см. стратегию resync в seed.ts).
  *
  * Правило наполнения: только реальные заказчики, проекты и ссылки.
- * Стек самой визитки (NestJS, Prisma, GraphQL, Docker) в список навыков
- * намеренно не добавлен — он показан делом, а не декларацией.
+ * Стек самой визитки в списке навыков есть: она сама и служит ему
+ * подтверждением. Раньше он был исключён как «показанный делом», но при
+ * фуллстек-позиционировании серверная половина обязана читаться списком,
+ * а не угадываться из того, чем сделан сайт.
  */
 
 /** Дата с точностью до месяца: день начала фриланс-заказа — ложная точность. */
@@ -58,7 +60,8 @@ export const seedData: SeedData = {
     name: 'Mark Omelchenko',
     description:
       'IT-track student at Lyceum No. 23 with 2+ years of self-taught web development. ' +
-      'Focused on React, Next.js and TypeScript; also work with Python on the backend. ' +
+      'Full-stack: React, Next.js and TypeScript on the client; NestJS, GraphQL, ' +
+      'Prisma and PostgreSQL on the server, plus Python. ' +
       'Have shipped commercial projects all the way to production.',
   },
 
@@ -79,6 +82,11 @@ export const seedData: SeedData = {
     { name: 'Tailwind CSS', category: SkillCategory.FRONTEND },
     { name: 'Responsive layout', category: SkillCategory.FRONTEND },
 
+    { name: 'Node.js', category: SkillCategory.BACKEND },
+    { name: 'NestJS', category: SkillCategory.BACKEND },
+    { name: 'GraphQL', category: SkillCategory.BACKEND },
+    { name: 'Prisma', category: SkillCategory.BACKEND },
+    { name: 'PostgreSQL', category: SkillCategory.BACKEND },
     { name: 'Python', category: SkillCategory.BACKEND },
     { name: 'REST API', category: SkillCategory.BACKEND },
     { name: 'Next.js server routes', category: SkillCategory.BACKEND },
@@ -87,6 +95,7 @@ export const seedData: SeedData = {
     { name: 'LLM capabilities and limits', category: SkillCategory.AI },
 
     { name: 'Git', category: SkillCategory.TOOLS },
+    { name: 'Docker', category: SkillCategory.TOOLS },
     { name: 'Vercel', category: SkillCategory.TOOLS },
     { name: 'ESLint', category: SkillCategory.TOOLS },
   ],

@@ -39,9 +39,9 @@ const tinos = Tinos({
 });
 
 export const metadata: Metadata = {
-  title: 'Mark Omelchenko — Frontend Developer',
+  title: 'Mark Omelchenko — Full-Stack Developer',
   description:
-    'Frontend developer working with React, Next.js and TypeScript. Selected work, experience and stack.',
+    'Full-stack developer working with React, Next.js, TypeScript and NestJS. Selected work, experience and stack.',
 };
 
 export const viewport: Viewport = {

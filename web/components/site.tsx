@@ -23,7 +23,7 @@ import { Works } from './works';
  * фирменного стиля: она разбивается на плашки по правилам вёрстки, и
  * менять её вместе с данными профиля не нужно.
  */
-const SLOGAN = 'Frontend Developer Shipping Real Products';
+const SLOGAN = 'Full-Stack Developer Shipping Real Products';
 
 export function Site({ profile }: { profile: Profile }) {
   const [panelOpen, setPanelOpen] = useState(false);
